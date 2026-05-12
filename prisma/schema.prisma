@@ -1,0 +1,238 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String?   @unique
+  phone         String?   @unique
+  name          String?
+  avatar        String?
+  isGuest       Boolean   @default(false)
+  trustScore    Int       @default(0)
+  points        Int       @default(0)
+  badge         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  reviews       Review[]
+  reports       Report[]
+  uploads       ImageUpload[]
+  checkIns      CheckIn[]
+  
+  @@map("users")
+}
+
+model Toilet {
+  id              String    @id @default(cuid())
+  name            String
+  description     String?
+  latitude        Float
+  longitude       Float
+  address         String?
+  area            String?
+  city            String    @default("Delhi")
+  state           String    @default("Delhi")
+  pincode         String?
+  
+  // Basic features
+  isFree          Boolean   @default(true)
+  isPaid          Boolean   @default(false)
+  price           Float?
+  
+  // Accessibility
+  isMale          Boolean   @default(true)
+  isFemale        Boolean   @default(true)
+  isUnisex        Boolean   @default(false)
+  isWheelchairAccessible Boolean @default(false)
+  hasBabyChangingStation Boolean @default(false)
+  hasShower        Boolean   @default(false)
+  
+  // Status
+  isOpen24_7      Boolean   @default(false)
+  isVerified      Boolean   @default(false)
+  isActive        Boolean   @default(true)
+  
+  // Ratings (averages)
+  cleanlinessRating Float   @default(0)
+  safetyRating      Float   @default(0)
+  overallRating     Float   @default(0)
+  
+  // Crowd and availability
+  currentCrowdLevel Int     @default(0) // 0-5 scale
+  hasWater          Boolean @default(true)
+  hasTissue         Boolean @default(true)
+  smellLevel        Int     @default(0) // 0-5 scale
+  
+  // Operating hours
+  openingTime      String?
+  closingTime      String?
+  
+  // Maintenance
+  lastCleanedAt    DateTime?
+  cleaningFrequency String? // daily, weekly, etc.
+  
+  // Contact
+  contactNumber    String?
+  website          String?
+  
+  // Location type
+  locationType     String? // mall, metro, petrol_pump, restaurant, hospital, market, public
+  
+  // Metadata
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  // Relations
+  reviews          Review[]
+  reports          Report[]
+  images           ImageUpload[]
+  checkIns         CheckIn[]
+  
+  @@map("toilets")
+}
+
+model Review {
+  id                String    @id @default(cuid())
+  userId            String
+  toiletId          String
+  
+  // Ratings
+  cleanlinessRating Int       // 1-5
+  safetyRating      Int       // 1-5
+  overallRating     Int       // 1-5
+  
+  // Review content
+  comment           String?
+  
+  // Additional info
+  crowdLevel        Int?      // 1-5 at time of visit
+  waterAvailable    Boolean?
+  tissueAvailable   Boolean?
+  smellLevel        Int?      // 1-5
+  
+  // Verification
+  isVerified        Boolean   @default(false)
+  helpfulCount      Int       @default(0)
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  toilet            Toilet    @relation(fields: [toiletId], references: [id], onDelete: Cascade)
+  
+  @@map("reviews")
+}
+
+model Report {
+  id                String    @id @default(cuid())
+  userId            String
+  toiletId          String
+  
+  // Report type
+  reportType        String    // dirty, closed, maintenance, other
+  
+  // Report content
+  description       String?
+  isAnonymous       Boolean   @default(false)
+  
+  // Status
+  status            String    @default("pending") // pending, resolved, dismissed
+  
+  // Admin response
+  adminResponse     String?
+  resolvedAt        DateTime?
+  resolvedBy        String?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  toilet            Toilet    @relation(fields: [toiletId], references: [id], onDelete: Cascade)
+  
+  @@map("reports")
+}
+
+model ImageUpload {
+  id                String    @id @default(cuid())
+  userId            String
+  toiletId          String?
+  
+  imageUrl          String
+  thumbnailUrl      String?
+  
+  // Image analysis
+  aiCleanlinessScore Float?
+  isVerified        Boolean   @default(false)
+  
+  // Metadata
+  fileSize          Int?
+  width             Int?
+  height            Int?
+  uploadedAt        DateTime  @default(now())
+  
+  // Relations
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  toilet            Toilet?   @relation(fields: [toiletId], references: [id], onDelete: Cascade)
+  
+  @@map("image_uploads")
+}
+
+model CheckIn {
+  id                String    @id @default(cuid())
+  userId            String
+  toiletId          String
+  
+  // Check-in data
+  checkInTime       DateTime  @default(now())
+  checkOutTime      DateTime?
+  duration          Int?      // in minutes
+  
+  // Quick feedback
+  quickRating       Int?      // 1-5
+  quickFeedback     String?   // clean, dirty, crowded, etc.
+  
+  // QR code data
+  qrCodeData        String?
+  
+  createdAt         DateTime  @default(now())
+  
+  // Relations
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  toilet            Toilet    @relation(fields: [toiletId], references: [id], onDelete: Cascade)
+  
+  @@map("check_ins")
+}
+
+model Badge {
+  id                String    @id @default(cuid())
+  name              String    @unique
+  description       String
+  icon              String
+  pointsRequired    Int
+  category          String    // reviewer, explorer, helper, etc.
+  
+  createdAt         DateTime  @default(now())
+  
+  @@map("badges")
+}
+
+model UserBadge {
+  id                String    @id @default(cuid())
+  userId            String
+  badgeId           String
+  earnedAt          DateTime  @default(now())
+  
+  @@unique([userId, badgeId])
+  @@map("user_badges")
+}
